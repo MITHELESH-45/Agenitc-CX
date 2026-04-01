@@ -23,10 +23,16 @@ async function postChat(req, res, next) {
       userId: userId.trim()
     });
 
-    return res.status(200).json({
-      success: true,
-      data: result
-    });
+    // Default response: just the reply (as requested).
+    // If you want debug metadata, call: POST /api/chat?debug=1
+    const debug = String(req.query.debug || "").toLowerCase();
+    const includeDebug = debug === "1" || debug === "true" || debug === "yes";
+
+    if (includeDebug) {
+      return res.status(200).json(result);
+    }
+
+    return res.status(200).send(result.reply);
   } catch (err) {
     return next(err);
   }
