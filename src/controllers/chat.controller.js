@@ -32,7 +32,12 @@ async function postChat(req, res, next) {
       return res.status(200).json(result);
     }
 
-    return res.status(200).send(result.reply);
+    return res.status(200).json({
+      success: true,
+      data: {
+        reply: result.reply
+      }
+    });
   } catch (err) {
     return next(err);
   }

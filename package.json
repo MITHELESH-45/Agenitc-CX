@@ -16,6 +16,7 @@
     "@langchain/openai": "^1.4.1",
     "@langchain/textsplitters": "^1.0.1",
     "chromadb": "^3.4.0",
+    "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "mongoose": "^8.18.1",
@@ -24,4 +25,3 @@
     "zod": "^3.25.76"
   }
 }
-

@@ -2,11 +2,13 @@ const express = require("express");
 
 const chatRoutes = require("./routes/chat.routes");
 const logger = require("./utils/logger");
+const cors = require("cors");
 
 const app = express();
 
 // Middleware-ready core
 app.disable("x-powered-by");
+app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
 // Simple request logger (kept dependency-free for Phase 1)
