@@ -1,6 +1,7 @@
 const express = require("express");
 
 const chatRoutes = require("./routes/chat.routes");
+const whatsappRoutes = require("./routes/whatsapp.routes");
 const logger = require("./utils/logger");
 const cors = require("cors");
 
@@ -10,6 +11,8 @@ const app = express();
 app.disable("x-powered-by");
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
+// Twilio webhooks send form-urlencoded bodies (Body, From, etc.)
+app.use(express.urlencoded({ extended: true }));
 
 // Simple request logger (kept dependency-free for Phase 1)
 app.use((req, res, next) => {
@@ -26,6 +29,7 @@ app.get("/health", async (req, res) => {
 });
 
 app.use("/api", chatRoutes);
+app.use("/api", whatsappRoutes);
 
 // 404 handler
 app.use((req, res) => {
