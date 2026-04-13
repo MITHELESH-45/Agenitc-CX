@@ -4,8 +4,18 @@ const actionAgent = require("../agents/action.agent");
 const { applySentiment } = require("../agents/sentiment.handler");
 const { generateResponse } = require("../agents/response.generator");
 const logger = require("../utils/logger");
+const { tryIdentityShortcut } = require("../utils/identityShortcut");
 
 async function handleUserMessage({ message, userId }) {
+  const shortcut = tryIdentityShortcut(message);
+  if (shortcut) {
+    logger.info("chat.identity_shortcut", { intent: shortcut.meta.intent });
+    return {
+      reply: shortcut.reply,
+      meta: shortcut.meta
+    };
+  }
+
   const routeDecision = await routerAgent.routeMessage({ message, userId });
 
   let agentResult;
