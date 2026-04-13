@@ -4,13 +4,12 @@ const app = require("./src/app");
 const logger = require("./src/utils/logger");
 const { connectMongo } = require("./src/db/mongo");
 const { startEmailListener } = require("./src/services/email.listener");
-const { startLocalChromaServer } = require("./src/rag/chroma.runtime");
+const { startLocalChromaServer, stopLocalChromaServer } = require("./src/rag/chroma.runtime");
 
 const PORT = process.env.PORT || 3000;
 
 let server;
 let emailListener;
-let chromaProcess;
 
 async function start() {
   try {
@@ -27,9 +26,9 @@ async function start() {
   // Local Chroma (persistent) for deployable RAG.
   // If it fails, the server still runs and RAG returns a safe fallback.
   try {
-    chromaProcess = await startLocalChromaServer();
+    await startLocalChromaServer();
   } catch (err) {
-    logger.error("chroma.start_failed", { err });
+    logger.error("chroma.start_failed", { message: err.message, stack: err.stack });
   }
 
   // Email channel (Gmail IMAP polling + SMTP reply). Safe no-op if env vars missing.
@@ -54,9 +53,7 @@ function shutdown(signal) {
   }
 
   try {
-    if (chromaProcess && typeof chromaProcess.kill === "function") {
-      chromaProcess.kill();
-    }
+    stopLocalChromaServer();
   } catch (err) {
     logger.error(err);
   }

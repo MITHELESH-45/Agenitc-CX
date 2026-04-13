@@ -4,6 +4,9 @@ const { spawn } = require("child_process");
 const logger = require("../utils/logger");
 const { getChromaDataPath, getChromaHost, getChromaPort, getChromaUrl } = require("./chroma.config");
 
+let chromaProcess = null;
+let chromaStartPromise = null;
+
 function ensureDir(dirPath) {
   try {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -33,6 +36,21 @@ async function waitForChroma({ timeoutMs = 15_000 } = {}) {
   }
 }
 
+async function isChromaReachable() {
+  const url = `${getChromaUrl()}/api/v1/heartbeat`;
+  try {
+    const res = await fetch(url, { method: "GET" });
+    return Boolean(res.ok);
+  } catch (_) {
+    return false;
+  }
+}
+
+function getNodeMajor() {
+  const major = Number(String(process.versions.node || "0").split(".")[0]);
+  return Number.isFinite(major) ? major : 0;
+}
+
 /**
  * Starts a local Chroma server (HTTP) with on-disk persistence.
  *
@@ -42,6 +60,13 @@ async function waitForChroma({ timeoutMs = 15_000 } = {}) {
  * - If Chroma fails to start, the app still boots; RAG will return a fallback message.
  */
 async function startLocalChromaServer() {
+  if (await isChromaReachable()) {
+    logger.info("chroma.already_running", { url: getChromaUrl() });
+    return chromaProcess;
+  }
+
+  if (chromaStartPromise) return chromaStartPromise;
+
   // The `npx chroma run` CLI currently does not support Windows x64.
   // Render runs Linux x64, which is supported. For local Windows dev,
   // run Chroma via Docker or Python and keep it on http://127.0.0.1:8000.
@@ -50,6 +75,14 @@ async function startLocalChromaServer() {
       message: "Auto-start for Chroma skipped on Windows; run Chroma separately on 127.0.0.1:8000"
     });
     return null;
+  }
+
+  // Current chromadb CLI native bindings can fail under Node 22+ in some Linux runtimes.
+  // Fail fast with an actionable error instead of opaque ERR_DLOPEN_FAILED.
+  if (getNodeMajor() >= 22) {
+    throw new Error(
+      "Chroma local runtime is not stable on Node 22 in this environment. Use Node 20 on Render (set NODE_VERSION=20)."
+    );
   }
 
   const dataPath = getChromaDataPath();
@@ -62,27 +95,56 @@ async function startLocalChromaServer() {
 
   // Use npx so we don't rely on a global install.
   // `shell: true` makes this work on Windows and Linux.
-  const child = spawn("npx", ["chroma", "run", "--path", dataPath, "--host", host, "--port", port], {
-    stdio: "inherit",
-    shell: true,
-    windowsHide: true
-  });
+  chromaStartPromise = (async () => {
+    const child = spawn("npx", ["chroma", "run", "--path", dataPath, "--host", host, "--port", port], {
+      stdio: "inherit",
+      shell: true,
+      windowsHide: true
+    });
 
-  child.on("error", (err) => {
-    logger.error("chroma.process_error", { err });
-  });
+    chromaProcess = child;
 
-  const ready = await waitForChroma();
-  if (ready) {
-    logger.info("chroma.ready", { url: getChromaUrl(), dataPath });
-  } else {
+    child.on("error", (err) => {
+      logger.error("chroma.process_error", { err });
+    });
+
+    child.on("exit", (code, signal) => {
+      logger.error("chroma.process_exit", { code, signal });
+      if (chromaProcess === child) chromaProcess = null;
+    });
+
+    const ready = await waitForChroma();
+    if (ready) {
+      logger.info("chroma.ready", { url: getChromaUrl(), dataPath });
+      return child;
+    }
+
     logger.error("chroma.not_ready_timeout", { url: getChromaUrl(), dataPath });
-  }
+    throw new Error("Chroma did not become ready before timeout");
+  })();
 
-  return child;
+  try {
+    return await chromaStartPromise;
+  } finally {
+    chromaStartPromise = null;
+  }
+}
+
+function stopLocalChromaServer() {
+  const child = chromaProcess;
+  chromaProcess = null;
+
+  if (!child) return;
+  try {
+    child.kill();
+  } catch (err) {
+    logger.error("chroma.stop_failed", { err });
+  }
 }
 
 module.exports = {
-  startLocalChromaServer
+  startLocalChromaServer,
+  stopLocalChromaServer,
+  isChromaReachable
 };
 

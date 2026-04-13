@@ -9,7 +9,7 @@ const { Chroma } = require("@langchain/community/vectorstores/chroma");
 const { getEmbeddingModel } = require("../config/openai.config");
 const logger = require("../utils/logger");
 const { getCollectionName, getChromaHost, getChromaPort, getChromaDataPath } = require("./chroma.config");
-const { startLocalChromaServer } = require("./chroma.runtime");
+const { startLocalChromaServer, isChromaReachable } = require("./chroma.runtime");
 
 function getChromaConfig() {
   return {
@@ -62,9 +62,10 @@ async function loadPdfDocumentsFromDataFolder() {
  * Returns metadata that can be used by admin endpoints.
  */
 async function ingestRag() {
-  // Ensure a local persistent Chroma is available for ingestion (Linux/Render).
-  // On Windows, auto-start is skipped (see chroma.runtime) so you must run Chroma separately.
-  const chromaProcess = await startLocalChromaServer();
+  // Ensure Chroma is up (already running or auto-started).
+  if (!(await isChromaReachable())) {
+    await startLocalChromaServer();
+  }
 
   try {
     const embeddings = getEmbeddingModel();
@@ -102,12 +103,9 @@ async function ingestRag() {
 
     logger.info("rag.ingest_complete", { chunks: docsWithChunkMeta.length });
     return { ok: true, chunks: docsWithChunkMeta.length };
-  } finally {
-    try {
-      if (chromaProcess && typeof chromaProcess.kill === "function") chromaProcess.kill();
-    } catch (_) {
-      // ignore
-    }
+  } catch (err) {
+    logger.error("rag.ingest_failed", { message: err.message, stack: err.stack });
+    throw err;
   }
 }
 

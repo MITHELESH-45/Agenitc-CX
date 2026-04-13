@@ -260,7 +260,14 @@ function startEmailListener() {
     connection = null;
 
     if (close) {
-      close.end().catch(() => {});
+      try {
+        const maybePromise = close.end();
+        if (maybePromise && typeof maybePromise.catch === "function") {
+          maybePromise.catch(() => {});
+        }
+      } catch (_) {
+        // ignore shutdown errors
+      }
     }
   }
 

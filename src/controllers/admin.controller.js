@@ -33,7 +33,7 @@ async function runIngest(req, res) {
       logger.info("admin.ingest_success", result);
       return result;
     } catch (err) {
-      logger.error("admin.ingest_error", { err });
+      logger.error("admin.ingest_error", { message: err.message, stack: err.stack });
       throw err;
     } finally {
       ingestInFlight = null;
@@ -43,8 +43,9 @@ async function runIngest(req, res) {
   try {
     await ingestInFlight;
     return res.status(200).json({ status: "success", message: "Ingestion completed" });
-  } catch (_) {
-    return res.status(200).json({ status: "error", message: "Ingestion failed" });
+  } catch (err) {
+    const message = err && err.message ? err.message : "Ingestion failed";
+    return res.status(200).json({ status: "error", message });
   }
 }
 
