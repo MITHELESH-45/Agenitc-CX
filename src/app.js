@@ -2,6 +2,7 @@ const express = require("express");
 
 const chatRoutes = require("./routes/chat.routes");
 const whatsappRoutes = require("./routes/whatsapp.routes");
+const adminRoutes = require("./routes/admin.routes");
 const logger = require("./utils/logger");
 const cors = require("cors");
 
@@ -30,6 +31,7 @@ app.get("/health", async (req, res) => {
 
 app.use("/api", chatRoutes);
 app.use("/api", whatsappRoutes);
+app.use("/admin", adminRoutes);
 
 // 404 handler
 app.use((req, res) => {
