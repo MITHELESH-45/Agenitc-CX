@@ -4,20 +4,10 @@ const { PDFParse } = require("pdf-parse");
 
 const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
 const { Document } = require("@langchain/core/documents");
-const { Chroma } = require("@langchain/community/vectorstores/chroma");
 
 const { getEmbeddingModel } = require("../config/openai.config");
 const logger = require("../utils/logger");
-const { getCollectionName, getChromaHost, getChromaPort, getChromaDataPath } = require("./chroma.config");
-const { startLocalChromaServer, isChromaReachable } = require("./chroma.runtime");
-
-function getChromaConfig() {
-  return {
-    collectionName: getCollectionName(),
-    host: getChromaHost(),
-    port: getChromaPort()
-  };
-}
+const { getCollection, getCollectionName, getChromaDataPath } = require("./chroma.client");
 
 async function loadPdfDocumentsFromDataFolder() {
   const dataDir = path.resolve(__dirname, "..", "..", "data");
@@ -62,16 +52,14 @@ async function loadPdfDocumentsFromDataFolder() {
  * Returns metadata that can be used by admin endpoints.
  */
 async function ingestRag() {
-  // Ensure Chroma is up (already running or auto-started).
-  if (!(await isChromaReachable())) {
-    await startLocalChromaServer();
-  }
-
   try {
     const embeddings = getEmbeddingModel();
-    const chromaConfig = getChromaConfig();
+    const collection = await getCollection();
 
-    logger.info("rag.ingest_start", { ...chromaConfig, dataPath: getChromaDataPath() });
+    logger.info("rag.ingest_start", {
+      collectionName: getCollectionName(),
+      dataPath: path.resolve(process.cwd(), getChromaDataPath())
+    });
 
     const rawDocs = await loadPdfDocumentsFromDataFolder();
 
@@ -98,8 +86,16 @@ async function ingestRag() {
       return `${src}::chunk_${i}`;
     });
 
-    const vectorStore = new Chroma(embeddings, chromaConfig);
-    await vectorStore.addDocuments(docsWithChunkMeta, { ids });
+    const documents = docsWithChunkMeta.map((d) => d.pageContent);
+    const metadatas = docsWithChunkMeta.map((d) => d.metadata || {});
+    const vectors = await embeddings.embedDocuments(documents);
+
+    await collection.upsert({
+      ids,
+      documents,
+      metadatas,
+      embeddings: vectors
+    });
 
     logger.info("rag.ingest_complete", { chunks: docsWithChunkMeta.length });
     return { ok: true, chunks: docsWithChunkMeta.length };

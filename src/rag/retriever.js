@@ -1,16 +1,6 @@
-const { Chroma } = require("@langchain/community/vectorstores/chroma");
-
 const { getEmbeddingModel, getChatModel } = require("../config/openai.config");
 const logger = require("../utils/logger");
-const { getCollectionName, getChromaHost, getChromaPort } = require("./chroma.config");
-
-function getChromaConfig() {
-  return {
-    collectionName: getCollectionName(),
-    host: getChromaHost(),
-    port: getChromaPort()
-  };
-}
+const { getCollection } = require("./chroma.client");
 
 function tokenize(text) {
   return String(text || "")
@@ -95,16 +85,33 @@ async function llmRerank({ query, candidates, topN = 6 }) {
 
 async function hybridRetrieve({ query, k = 6 }) {
   const embeddings = getEmbeddingModel();
-  const chromaConfig = getChromaConfig();
-  const vectorStore = new Chroma(embeddings, chromaConfig);
+  const collection = await getCollection();
+  const queryEmbedding = await embeddings.embedQuery(query);
 
   // 1) Vector similarity
-  const vectorHits = await vectorStore.similaritySearch(query, 12);
-  const vectorRanked = vectorHits.map((doc, idx) => ({
-    id: doc.metadata && doc.metadata.source ? `${doc.metadata.source}::${doc.metadata.chunk_index}` : `v_${idx}`,
-    doc,
-    text: doc.pageContent
-  }));
+  const result = await collection.query({
+    queryEmbeddings: [queryEmbedding],
+    nResults: 12,
+    include: ["documents", "metadatas", "distances"]
+  });
+
+  const ids = (result && result.ids && result.ids[0]) || [];
+  const documents = (result && result.documents && result.documents[0]) || [];
+  const metadatas = (result && result.metadatas && result.metadatas[0]) || [];
+
+  const vectorRanked = ids.map((id, idx) => {
+    const metadata = metadatas[idx] || {};
+    return {
+      id: String(id || `v_${idx}`),
+      doc: {
+        pageContent: String(documents[idx] || ""),
+        metadata
+      },
+      text: String(documents[idx] || "")
+    };
+  });
+
+  if (!vectorRanked.length) return [];
 
   // 2) Simulated keyword search over the same candidate pool (keeps it fast & dependency-free)
   const keywordRanked = [...vectorRanked]

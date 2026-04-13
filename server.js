@@ -4,7 +4,6 @@ const app = require("./src/app");
 const logger = require("./src/utils/logger");
 const { connectMongo } = require("./src/db/mongo");
 const { startEmailListener } = require("./src/services/email.listener");
-const { startLocalChromaServer, stopLocalChromaServer } = require("./src/rag/chroma.runtime");
 
 const PORT = process.env.PORT || 3000;
 
@@ -23,14 +22,6 @@ async function start() {
     logger.info(`Agentic-CX backend listening on port ${PORT}`);
   });
 
-  // Local Chroma (persistent) for deployable RAG.
-  // If it fails, the server still runs and RAG returns a safe fallback.
-  try {
-    await startLocalChromaServer();
-  } catch (err) {
-    logger.error("chroma.start_failed", { message: err.message, stack: err.stack });
-  }
-
   // Email channel (Gmail IMAP polling + SMTP reply). Safe no-op if env vars missing.
   emailListener = startEmailListener();
 }
@@ -48,12 +39,6 @@ function shutdown(signal) {
     if (emailListener && typeof emailListener.stop === "function") {
       emailListener.stop();
     }
-  } catch (err) {
-    logger.error(err);
-  }
-
-  try {
-    stopLocalChromaServer();
   } catch (err) {
     logger.error(err);
   }
