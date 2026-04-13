@@ -10,12 +10,14 @@ const { Chroma } = require("@langchain/community/vectorstores/chroma");
 
 const { getEmbeddingModel } = require("../config/openai.config");
 const logger = require("../utils/logger");
+const { getCollectionName, getChromaHost, getChromaPort, getChromaDataPath } = require("./chroma.config");
+const { startLocalChromaServer } = require("./chroma.runtime");
 
 function getChromaConfig() {
   return {
-    collectionName: process.env.CHROMA_COLLECTION || "agentic_cx_company_docs",
-    host: process.env.CHROMA_HOST || "localhost",
-    port: Number(process.env.CHROMA_PORT || 8000)
+    collectionName: getCollectionName(),
+    host: getChromaHost(),
+    port: getChromaPort()
   };
 }
 
@@ -57,10 +59,14 @@ async function loadPdfDocumentsFromDataFolder() {
 }
 
 async function ingest() {
+  // Ensure a local persistent Chroma is available for ingestion (Linux/Render).
+  // On Windows, auto-start is skipped (see chroma.runtime) so you must run Chroma separately.
+  const chromaProcess = await startLocalChromaServer();
+
   const embeddings = getEmbeddingModel();
   const chromaConfig = getChromaConfig();
 
-  logger.info("Starting PDF ingestion", chromaConfig);
+  logger.info("Starting PDF ingestion", { ...chromaConfig, dataPath: getChromaDataPath() });
 
   const rawDocs = await loadPdfDocumentsFromDataFolder();
 
@@ -91,6 +97,12 @@ async function ingest() {
   await vectorStore.addDocuments(docsWithChunkMeta, { ids });
 
   logger.info("Ingestion complete", { chunks: docsWithChunkMeta.length });
+
+  try {
+    if (chromaProcess && typeof chromaProcess.kill === "function") chromaProcess.kill();
+  } catch (_) {
+    // ignore
+  }
 }
 
 ingest()

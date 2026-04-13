@@ -2,12 +2,13 @@ const { Chroma } = require("@langchain/community/vectorstores/chroma");
 
 const { getEmbeddingModel, getChatModel } = require("../config/openai.config");
 const logger = require("../utils/logger");
+const { getCollectionName, getChromaHost, getChromaPort } = require("./chroma.config");
 
 function getChromaConfig() {
   return {
-    collectionName: process.env.CHROMA_COLLECTION || "agentic_cx_company_docs",
-    host: process.env.CHROMA_HOST || "localhost",
-    port: Number(process.env.CHROMA_PORT || 8000)
+    collectionName: getCollectionName(),
+    host: getChromaHost(),
+    port: getChromaPort()
   };
 }
 
