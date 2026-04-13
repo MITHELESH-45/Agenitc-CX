@@ -84,14 +84,14 @@ async function llmRerank({ query, candidates, topN = 6 }) {
 }
 
 async function hybridRetrieve({ query, k = 6 }) {
-  const embeddings = getEmbeddingModel();
   const collection = await getCollection();
+  const embeddings = getEmbeddingModel();
   const queryEmbedding = await embeddings.embedQuery(query);
 
   // 1) Vector similarity
   const result = await collection.query({
     queryEmbeddings: [queryEmbedding],
-    nResults: 12,
+    nResults: Math.max(12, k),
     include: ["documents", "metadatas", "distances"]
   });
 

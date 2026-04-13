@@ -3,11 +3,38 @@ const path = require("path");
 const { PDFParse } = require("pdf-parse");
 
 const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
-const { Document } = require("@langchain/core/documents");
-
 const { getEmbeddingModel } = require("../config/openai.config");
 const logger = require("../utils/logger");
-const { getCollection, getCollectionName, getChromaDataPath } = require("./chroma.client");
+const { getCollection, getCollectionName } = require("./chroma.client");
+
+function sanitizeMetadata(metadata) {
+  const output = {};
+  const input = metadata || {};
+
+  for (const [key, value] of Object.entries(input)) {
+    if (value == null) {
+      output[key] = null;
+      continue;
+    }
+
+    const t = typeof value;
+    if (t === "string" || t === "number" || t === "boolean") {
+      output[key] = value;
+      continue;
+    }
+
+    if (Array.isArray(value) && value.every((x) => ["string", "number", "boolean"].includes(typeof x))) {
+      output[key] = value;
+      continue;
+    }
+
+    // Chroma metadata must be scalar/typed-array friendly.
+    // Convert nested objects (e.g. LangChain `loc`) to compact JSON strings.
+    output[key] = JSON.stringify(value);
+  }
+
+  return output;
+}
 
 async function loadPdfDocumentsFromDataFolder() {
   const dataDir = path.resolve(__dirname, "..", "..", "data");
@@ -34,15 +61,13 @@ async function loadPdfDocumentsFromDataFolder() {
       continue;
     }
 
-    docs.push(
-      new Document({
-        pageContent: text,
-        metadata: {
-          source: file,
-          filePath
-        }
-      })
-    );
+    docs.push({
+      pageContent: text,
+      metadata: {
+        source: file,
+        filePath
+      }
+    });
   }
   return docs;
 }
@@ -57,8 +82,7 @@ async function ingestRag() {
     const collection = await getCollection();
 
     logger.info("rag.ingest_start", {
-      collectionName: getCollectionName(),
-      dataPath: path.resolve(process.cwd(), getChromaDataPath())
+      collectionName: getCollectionName()
     });
 
     const rawDocs = await loadPdfDocumentsFromDataFolder();
@@ -70,15 +94,13 @@ async function ingestRag() {
 
     const chunked = await splitter.splitDocuments(rawDocs);
 
-    const docsWithChunkMeta = chunked.map((d, idx) => {
-      return new Document({
-        pageContent: d.pageContent,
-        metadata: {
-          ...d.metadata,
-          chunk_index: idx
-        }
-      });
-    });
+    const docsWithChunkMeta = chunked.map((d, idx) => ({
+      pageContent: d.pageContent,
+      metadata: {
+        ...d.metadata,
+        chunk_index: idx
+      }
+    }));
 
     const ids = docsWithChunkMeta.map((d) => {
       const src = d.metadata.source || "unknown";
@@ -87,9 +109,8 @@ async function ingestRag() {
     });
 
     const documents = docsWithChunkMeta.map((d) => d.pageContent);
-    const metadatas = docsWithChunkMeta.map((d) => d.metadata || {});
+    const metadatas = docsWithChunkMeta.map((d) => sanitizeMetadata(d.metadata));
     const vectors = await embeddings.embedDocuments(documents);
-
     await collection.upsert({
       ids,
       documents,

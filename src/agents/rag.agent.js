@@ -21,8 +21,7 @@ async function answerWithRag({ message }) {
     return {
       ok: false,
       type: "rag_unavailable",
-      message:
-        "RAG is unavailable right now (Chroma or embeddings not reachable). Please try again after starting Chroma and running ingestion."
+      message: "RAG is unavailable right now (Chroma Cloud or embeddings not reachable). Please try again later."
     };
   }
 
