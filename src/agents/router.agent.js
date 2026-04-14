@@ -54,7 +54,6 @@ async function routeMessage({ message }) {
     return parsed;
   } catch (err) {
     logger.error(err, { where: "router.agent" });
-    // Fallback heuristic routing so the system still responds.
     const orderMatch = String(message).match(/\b(\d{3,})\b/);
     const likelyAction = /order|refund|cancel|status|delivery|delivered|late/i.test(String(message));
     const angry = /angry|furious|ridiculous|hate|worst|never|sucks|useless/i.test(String(message));

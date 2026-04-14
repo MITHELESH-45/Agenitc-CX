@@ -1,9 +1,7 @@
 const chatService = require("../services/chat.service");
 const logger = require("../utils/logger");
 
-/**
- * Escape text for safe inclusion inside Twilio TwiML <Message> body.
- */
+
 function escapeXml(text) {
   return String(text)
     .replace(/&/g, "&amp;")
@@ -13,9 +11,7 @@ function escapeXml(text) {
     .replace(/'/g, "&apos;");
 }
 
-/**
- * Build TwiML response. Twilio expects 200 + XML (text/xml).
- */
+
 function sendTwiML(res, bodyText) {
   const safe = escapeXml(bodyText);
   const xml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${safe}</Message></Response>`;
@@ -25,11 +21,7 @@ function sendTwiML(res, bodyText) {
 const FALLBACK_REPLY = "Sorry, something went wrong. Please try again.";
 const EMPTY_REPLY = "We didn't receive any message. Please send your question again.";
 
-/**
- * Twilio WhatsApp Sandbox webhook.
- * Form fields: Body (message), From (whatsapp:+... sender id).
- * Always responds with HTTP 200 and TwiML (Twilio requirement).
- */
+
 async function postWhatsApp(req, res) {
   try {
     const body = req.body || {};
@@ -50,8 +42,6 @@ async function postWhatsApp(req, res) {
 
     let replyText = FALLBACK_REPLY;
     try {
-      // Match seeded demo orders (e.g. seed.js uses userId "user_1").
-      // Later: map Twilio `sender` (whatsapp:+...) to a real user id in the DB.
       const result = await chatService.handleUserMessage({
         message,
         userId: "user_1"

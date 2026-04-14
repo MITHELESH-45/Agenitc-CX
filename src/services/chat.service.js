@@ -14,7 +14,7 @@ const ESCALATION_REPLY =
 async function handleUserMessage({ message, userId }) {
   const startedAt = Date.now();
 
-  // ─── Identity shortcut (no LLM call) ─────────────────────────────────────
+
   const shortcut = tryIdentityShortcut(message);
   if (shortcut) {
     logger.info("chat.identity_shortcut", { intent: shortcut.meta.intent });
@@ -37,10 +37,10 @@ async function handleUserMessage({ message, userId }) {
     };
   }
 
-  // ─── Route the message ────────────────────────────────────────────────────
+
   const routeDecision = await routerAgent.routeMessage({ message, userId });
 
-  // ─── Run the appropriate agent ────────────────────────────────────────────
+
   let agentResult;
   let actionFailed = false;
 
@@ -63,7 +63,7 @@ async function handleUserMessage({ message, userId }) {
     agentResult = await ragAgent.answerWithRag({ message, userId });
   }
 
-  // ─── Build base text ──────────────────────────────────────────────────────
+
   let baseText = "";
   if (agentResult && agentResult.ok && agentResult.type === "order_status") {
     baseText = `Your order is ${agentResult.status}.`;
@@ -75,20 +75,18 @@ async function handleUserMessage({ message, userId }) {
     baseText = "I couldn't process that request right now. Please try again.";
   }
 
-  // ─── Detect escalation need ───────────────────────────────────────────────
+
   const shouldEscalate = routeDecision.emotion === "angry";
 
   if (shouldEscalate) {
     baseText = ESCALATION_REPLY;
   }
 
-  // ─── Apply sentiment tone ─────────────────────────────────────────────────
-  // Skip toning when we already used the escalation copy (it handles its own tone)
   const tonedText = shouldEscalate
     ? baseText
     : applySentiment({ emotion: routeDecision.emotion, baseText });
 
-  // ─── Build final response ─────────────────────────────────────────────────
+
   const final = generateResponse({ routeDecision, agentResult, tonedText });
 
   // Attach RAG sources when available
@@ -98,8 +96,7 @@ async function handleUserMessage({ message, userId }) {
 
   const responseTime = Date.now() - startedAt;
 
-  // ─── Log interaction (non-blocking) ──────────────────────────────────────
-  // We use [DEBUG] prefix temporarily to confirm this NEW code is running
+
   const retrievedDocs = (agentResult && agentResult.full_context)
     ? agentResult.full_context.slice(0, 5)
     : [];
@@ -115,7 +112,7 @@ async function handleUserMessage({ message, userId }) {
     responseTime
   });
 
-  // ─── Create escalation ticket (non-blocking) ──────────────────────────────
+
   if (shouldEscalate) {
     createTicket({
       user: userId,
@@ -125,7 +122,7 @@ async function handleUserMessage({ message, userId }) {
     });
   }
 
-  // ─── Info log ─────────────────────────────────────────────────────────────
+
   logger.info("chat.completed", {
     route: routeDecision.route,
     intent: routeDecision.intent,

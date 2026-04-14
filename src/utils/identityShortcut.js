@@ -1,7 +1,3 @@
-/**
- * Short-circuit replies for identity / meta questions so we don't depend on RAG or Chroma.
- * Keeps the main AI pipeline unchanged for everything else.
- */
 
 const IDENTITY_PATTERNS =
   /\b(who are you|what are you|what'?s your name|what is your name|tell me about yourself|who is this|who built you|who made you|what is agentic\s*cx|what is agentic|what do you do|what can you (do|help)|are you (a bot|an ai|human))\b/i;

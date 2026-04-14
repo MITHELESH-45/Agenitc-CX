@@ -16,7 +16,6 @@ export const sendMessage = async (message, userId = 'user_1') => {
   }
 };
 
-// --- Admin APIs ---
 
 export const getAnalytics = async () => {
   try {

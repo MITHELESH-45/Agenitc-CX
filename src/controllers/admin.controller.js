@@ -8,7 +8,6 @@ const Ticket = require("../db/models/ticket.model");
 // Path to the metrics.json file written by ragas_eval.py
 const METRICS_FILE = path.resolve(__dirname, "..", "..", "metrics.json");
 
-// ─── Ingest (existing) ────────────────────────────────────────────────────────
 
 let ingestInFlight = null;
 
@@ -18,10 +17,6 @@ function isAuthorized(req) {
   return Boolean(secret && key && key === secret);
 }
 
-/**
- * GET /admin/ingest?key=...
- * Runs the RAG ingestion pipeline safely.
- */
 async function runIngest(req, res) {
   if (!isAuthorized(req)) {
     return res.status(403).json({ status: "error", message: "Forbidden" });
@@ -55,21 +50,6 @@ async function runIngest(req, res) {
   }
 }
 
-// ─── Analytics ────────────────────────────────────────────────────────────────
-
-/**
- * GET /admin/analytics
- * Returns aggregate interaction + escalation counts.
- *
- * Response:
- * {
- *   "totalQueries": 120,
- *   "ragQueries": 50,
- *   "actionQueries": 70,
- *   "escalations": 15,
- *   "avgResponseTime": 842
- * }
- */
 async function getAnalytics(req, res) {
   try {
     const [
@@ -111,16 +91,6 @@ async function getAnalytics(req, res) {
   }
 }
 
-// ─── Tickets ──────────────────────────────────────────────────────────────────
-
-/**
- * GET /admin/tickets
- * Returns all tickets sorted by newest first.
- *
- * Optional query params:
- *   ?status=open|resolved
- *   ?limit=50  (default 100)
- */
 async function getTickets(req, res) {
   try {
     const filter = {};
@@ -148,13 +118,6 @@ async function getTickets(req, res) {
   }
 }
 
-// ─── Metrics (Ragas) ─────────────────────────────────────────────────────────
-
-/**
- * GET /admin/metrics
- * Reads Ragas evaluation scores from metrics.json.
- * Run `python ragas_eval.py` to generate / refresh the file.
- */
 async function getMetrics(req, res) {
   try {
     if (!fs.existsSync(METRICS_FILE)) {
@@ -178,17 +141,6 @@ async function getMetrics(req, res) {
   }
 }
 
-// ─── Interactions (bonus: raw log for Ragas export) ──────────────────────────
-
-/**
- * GET /admin/interactions
- * Returns recent interactions (most recent first).
- * Useful for feeding data into the Ragas Python pipeline.
- *
- * Optional query params:
- *   ?limit=50  (default 100)
- *   ?route=rag_agent|action_agent
- */
 async function getInteractions(req, res) {
   try {
     const filter = {};

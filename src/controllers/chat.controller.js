@@ -23,8 +23,7 @@ async function postChat(req, res, next) {
       userId: userId.trim()
     });
 
-    // Default response: just the reply (as requested).
-    // If you want debug metadata, call: POST /api/chat?debug=1
+
     const debug = String(req.query.debug || "").toLowerCase();
     const includeDebug = debug === "1" || debug === "true" || debug === "yes";
 

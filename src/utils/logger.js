@@ -13,12 +13,10 @@ function write(level, message, context) {
   const line = `[${ts}] ${level.toUpperCase()} ${message}${formatContext(context)}`;
 
   if (level === "error") {
-    // eslint-disable-next-line no-console
     console.error(line);
     return;
   }
 
-  // eslint-disable-next-line no-console
   console.log(line);
 }
 
