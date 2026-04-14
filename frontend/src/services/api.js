@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://agenitc-cx.onrender.com',
+  baseURL: 'http://localhost:3000/api',
 });
 
 export const sendMessage = async (message, userId = 'user_1') => {

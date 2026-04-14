@@ -55,6 +55,7 @@ async function answerWithRag({ message }) {
       ok: true,
       type: "rag_answer",
       answer: text.trim(),
+      full_context: docs.map((d) => d.pageContent || ""), // NEW: For Ragas evaluation
       sources: docs.map((d) => ({
         source: d.metadata && d.metadata.source,
         chunk_index: d.metadata && d.metadata.chunk_index

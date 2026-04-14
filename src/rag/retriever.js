@@ -65,8 +65,12 @@ async function llmRerank({ query, candidates, topN = 6 }) {
 
   try {
     const raw = await model.invoke(prompt);
-    const text = raw && raw.content ? String(raw.content) : String(raw);
-    const json = JSON.parse(text.trim());
+    let text = raw && raw.content ? String(raw.content) : String(raw);
+    
+    // Strip markdown code blocks if the LLM included them
+    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+    const json = JSON.parse(text);
     if (!Array.isArray(json)) return candidates.slice(0, topN);
 
     const chosen = [];
