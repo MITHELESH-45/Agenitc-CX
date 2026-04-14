@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: `${BASE_URL}/api`,
 });
 
 export const sendMessage = async (message, userId = 'user_1') => {
@@ -18,8 +20,8 @@ export const sendMessage = async (message, userId = 'user_1') => {
 
 export const getAnalytics = async () => {
   try {
-    // Admin routes are at /admin not /api
-    const response = await api.get('/../admin/analytics');
+    // Navigate from /api to /admin using relative path
+    const response = await api.get('../admin/analytics');
     return response.data;
   } catch (error) {
     console.error('Analytics Error:', error);
@@ -29,7 +31,7 @@ export const getAnalytics = async () => {
 
 export const getMetrics = async () => {
   try {
-    const response = await api.get('/../admin/metrics');
+    const response = await api.get('../admin/metrics');
     return response.data;
   } catch (error) {
     console.error('Metrics Error:', error);
@@ -39,7 +41,7 @@ export const getMetrics = async () => {
 
 export const getTickets = async () => {
   try {
-    const response = await api.get('/../admin/tickets');
+    const response = await api.get('../admin/tickets');
     return response.data;
   } catch (error) {
     console.error('Tickets Error:', error);
