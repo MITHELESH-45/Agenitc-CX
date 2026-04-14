@@ -41,19 +41,22 @@ const Login = () => {
             </div>
           </button>
 
-          {/* Admin Card (disabled) */}
-          <div className="group w-full flex items-center p-6 bg-slate-100 border border-slate-200 rounded-2xl opacity-60 cursor-not-allowed">
-            <div className="w-12 h-12 bg-slate-200 rounded-xl flex items-center justify-center mr-6 shrink-0">
-              <ShieldCheck className="w-6 h-6 text-slate-400" />
+          {/* Admin Card (Enabled) */}
+          <button
+            onClick={() => navigate('/admin')}
+            className="group w-full flex items-center p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all duration-300 hover:-translate-y-1 cursor-pointer text-left"
+          >
+            <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 transition-colors mr-6 shrink-0">
+              <ShieldCheck className="w-6 h-6 text-indigo-600 group-hover:text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-slate-400">Admin Portal</h3>
-              <p className="text-sm text-slate-400">Advanced settings coming soon</p>
+              <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">Admin Portal</h3>
+              <p className="text-sm text-slate-500">System analytics and evaluation tools</p>
             </div>
-            <span className="text-[10px] font-bold bg-slate-200 text-slate-500 px-2 py-1 rounded-full uppercase tracking-wider ml-2 shrink-0">
-              Soon
+            <span className="text-[10px] font-bold bg-green-50 text-green-600 px-2 py-1 rounded-full uppercase tracking-wider ml-2 shrink-0 border border-green-100">
+              Active
             </span>
-          </div>
+          </button>
         </div>
 
         <div className="mt-12 text-center">
