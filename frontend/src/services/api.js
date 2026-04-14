@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 const api = axios.create({
   baseURL: `${BASE_URL}/api`,
@@ -20,8 +20,7 @@ export const sendMessage = async (message, userId = 'user_1') => {
 
 export const getAnalytics = async () => {
   try {
-    // Navigate from /api to /admin using relative path
-    const response = await api.get('../admin/analytics');
+    const response = await axios.get(`${BASE_URL}/admin/analytics`);
     return response.data;
   } catch (error) {
     console.error('Analytics Error:', error);
@@ -31,7 +30,7 @@ export const getAnalytics = async () => {
 
 export const getMetrics = async () => {
   try {
-    const response = await api.get('../admin/metrics');
+    const response = await axios.get(`${BASE_URL}/admin/metrics`);
     return response.data;
   } catch (error) {
     console.error('Metrics Error:', error);
@@ -41,7 +40,7 @@ export const getMetrics = async () => {
 
 export const getTickets = async () => {
   try {
-    const response = await api.get('../admin/tickets');
+    const response = await axios.get(`${BASE_URL}/admin/tickets`);
     return response.data;
   } catch (error) {
     console.error('Tickets Error:', error);
