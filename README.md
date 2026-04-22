@@ -1,4 +1,4 @@
-# Agentic-CX — AI-Powered Customer Experience Platform
+# Agentic-CX — AI-Powered Customer Support Platform
 
 Agentic-CX is a production-grade, multi-agent AI system designed to automate customer support while maintaining human-level precision. It leverages an autonomous orchestration layer to route intents, perform RAG-based knowledge retrieval, and execute real-world business actions.
 
@@ -34,9 +34,6 @@ The system is designed with a **fail-safe layer**: if the AI detects high fricti
 
 ---
 
-## 📊 Dashboard Preview
-
-![Dashboard Mockup Placeholder](https://via.placeholder.com/1200x600/f8fafc/2563eb?text=Agentic-CX+Admin+Dashboard+Preview)
 
 ---
 
